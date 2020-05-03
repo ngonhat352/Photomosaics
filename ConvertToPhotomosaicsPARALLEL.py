@@ -1,6 +1,8 @@
-﻿from PIL import Image
+from PIL import Image
 from MakeRGBDataset import cropEach, createDataset, processDataset
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
+from threading import current_thread # SOLUTION
 
 
 def rescaleToPixels(inputImg):
@@ -20,10 +22,10 @@ def getPixelsOfPic(img):
     return pixels
 
 
-def calculateBestColorFit(imgPixels, datasetPics):
-    result = []
+def calculateBestColorFit(rgb, datasetPics):
+        result = []
 
-    for rgb in imgPixels:
+    # for rgb in imgPixels:
         if rgb[3] <= 150:   #To remove the color edges
             rgb = (255,255,255,255)
 
@@ -43,7 +45,7 @@ def calculateBestColorFit(imgPixels, datasetPics):
 
         result.append([x,y])
 
-    return result
+        return result
 
 
 def createFinalPic(colorFitList, img, widthOfEach, heightOfEach):
@@ -72,7 +74,7 @@ if __name__ == "__main__":
     heightOfEach = processedData[2]
 
     # inputImg = input("Name of picture to convert into Photomosaics:  ")
-    inputImg = 'bulbasaur.png'
+    inputImg = 'lorsan.png'
     inputImage = Image.open(inputImg).convert("RGBA")
 
     s1 = time.perf_counter()
@@ -86,8 +88,15 @@ if __name__ == "__main__":
     print(f'getPixelsOfPic finished in {round(f2-s2, 2)} second(s)')
 
     s3 = time.perf_counter()
-    colorFitList = calculateBestColorFit(pixelsList, dataset)
-    print(colorFitList)
+    # colorFitList = calculateBestColorFit(pixelsList, dataset)
+    colorFitList = []
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        results = [executor.submit(calculateBestColorFit, rgb, dataset)
+                           for rgb in pixelsList]
+        print(current_thread().name)
+        for i in as_completed(results):
+            colorFitList.append(i.result()[0])
+    # print(colorFitList)
     f3 = time.perf_counter()
     print(f'CalculateBestColorFit finished in {round(f3-s3, 2)} second(s)')
 
@@ -100,4 +109,4 @@ if __name__ == "__main__":
 #calculateBestColorFit and createFinalPic were the two out of 4 functions in ConvertToPhotomosaicsSEQ
 # that are the mose expensive:
 # ~8s for calculate and ~8.7s for createFinalPic (widthpixels = 100)
-# 32.7s for calculate and 
+# 32.7s for calculate and

@@ -18,10 +18,12 @@ def cropEach(x, y, datasetImg, widthOfEach, heightOfEach):
 
 
 def createDataset():
-    dataset = input("Your dataset picture (for example: pokemon_dataset.png):   ")
+    # dataset = input("Your dataset picture (for example: pokemon_dataset.png):   ")
+    dataset = 'pokemon_dataset.png'
     datasetName = dataset[:-4] + "_RGBList.txt"
 
-    dimensions = input("Dimensions of the dataset picture (number of columns and number of rows):   ")
+    # dimensions = input("Dimensions of the dataset picture (number of columns and number of rows):   ")
+    dimensions = '28 18'
     dimensions = dimensions.split()
     numCols = int(dimensions[0])
     numRows = int(dimensions[1])
