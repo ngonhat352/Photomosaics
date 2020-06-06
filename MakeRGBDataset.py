@@ -1,3 +1,5 @@
+# import sys
+# sys.path.append("./445project_env/lib/python3.6/site-packages")
 from PIL import Image
 
 

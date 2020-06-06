@@ -1,0 +1,18 @@
+{
+  "logger": {
+    "title": "Remote Sync"
+  },
+  "uploadOnSave": true,
+  "useAtomicWrites": true,
+  "deleteLocal": false,
+  "hostname": "mscs1.olri.macalester.edu",
+  "target": "/home/nngo/445s20/PhotomosaicsWithParallel",
+  "ignore": [
+    ".remote-sync.json",
+    ".git/**"
+  ],
+  "username": "nngo",
+  "password": "idkmanthisisHARD352",
+  "watch": [],
+  "transport": "scp"
+}

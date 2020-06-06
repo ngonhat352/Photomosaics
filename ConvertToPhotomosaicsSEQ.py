@@ -1,6 +1,6 @@
+import time
 ﻿from PIL import Image
 from MakeRGBDataset import cropEach, createDataset, processDataset
-import time
 
 
 def rescaleToPixels(inputImg):
@@ -100,4 +100,4 @@ if __name__ == "__main__":
 #calculateBestColorFit and createFinalPic were the two out of 4 functions in ConvertToPhotomosaicsSEQ
 # that are the mose expensive:
 # ~8s for calculate and ~8.7s for createFinalPic (widthpixels = 100)
-# 32.7s for calculate and 
+# 32.7s for calculate and
