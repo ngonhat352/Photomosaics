@@ -6,7 +6,7 @@
   "useAtomicWrites": true,
   "deleteLocal": false,
   "hostname": "mscs1.olri.macalester.edu",
-  "target": "/home/nngo/445s20/PhotomosaicsWithParallel",
+  "target": "/home/nngo/445s20/nngo_proj_env/photomosaics_with_parallel",
   "ignore": [
     ".remote-sync.json",
     ".git/**"
