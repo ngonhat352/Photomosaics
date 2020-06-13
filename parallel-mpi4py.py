@@ -1,8 +1,14 @@
+'''
+WILL WORK IF COMM.BARRIER() WORKS...
+'''
 from PIL import Image
 from createRGBDataset import createDataset
 import time
+from photomosaicsSEQ import correctResult
+from mpi4py import MPI
 
-# correctResult = []
+
+# print(photomosaicsSEQ.correctResult)
 
 def rescaleToPixels(inputImg):
     numPixelsWidth = 100      # WHERE THE SAMPLE SIZE WILL CHANGE
@@ -27,27 +33,43 @@ def getPixelsOfPic(img):
 
 def calculateBestColorFit(imgPixels, datasetPics):
     result = []
+    comm = MPI.COMM_WORLD
+    id = comm.Get_rank()            #number of the process running the code
+    numProcesses = comm.Get_size()  #total number of processes running
+    myHostName = MPI.Get_processor_name()  #machine name running the code
 
-    for eachPix in imgPixels:
-        x = eachPix[0]
-        y = eachPix[1]
-        rgb = eachPix[2]
-        if rgb[3] <= 150:   #To remove the color edges
-            rgb = (255,255,255,255)
+    REPS = len(imgPixels)
+    print(id)
+    print('\n')
+    if (numProcesses <= REPS):
 
-        minDifference = 9999
+        for i in range(id, REPS, numProcesses):
 
-        for i in range(len(datasetPics)):
-            diff = 0
-            diff += abs(rgb[0] - int(datasetPics[i][1][0]))
-            diff += abs(rgb[1] - int(datasetPics[i][1][1]))
-            diff += abs(rgb[2] - int(datasetPics[i][1][2]))
+    # for eachPix in imgPixels:
+            eachPix = imgPixels[i]
+            x = eachPix[0]
+            y = eachPix[1]
+            rgb = eachPix[2]
+            if rgb[3] <= 150:   #To remove the color edges
+                rgb = (255,255,255,255)
 
-            if diff < minDifference:
-                pic = datasetPics[i][2]
-                minDifference = diff
+            minDifference = 9999
+
+            for i in range(len(datasetPics)):
+                diff = 0
+                diff += abs(rgb[0] - int(datasetPics[i][1][0]))
+                diff += abs(rgb[1] - int(datasetPics[i][1][1]))
+                diff += abs(rgb[2] - int(datasetPics[i][1][2]))
+
+                if diff < minDifference:
+                    pic = datasetPics[i][2]
+                    minDifference = diff
 
         result.append([x,y,pic])
+
+    max = comm.reduce(diff, op=MPI.MAX)
+    comm.Barrier()
+    comm.barrier()
 
     return result
 
@@ -55,21 +77,37 @@ def calculateBestColorFit(imgPixels, datasetPics):
 def createFinalPic(colorFitList, img, widthOfEach, heightOfEach):
     width, height = img.size
     finalImg = Image.new("RGB", (width * round(widthOfEach), height * round(heightOfEach)), color = "black")
-
     for i in range(0, len(colorFitList)):
         finalImg.paste(colorFitList[i][2],
                        (colorFitList[i][0] * round(widthOfEach), colorFitList[i][1] * round(heightOfEach)))
 
     finalImg.save("finalImg.png")
+    # comm = MPI.COMM_WORLD
+    # id = comm.Get_rank()            #number of the process running the code
+    # numProcesses = comm.Get_size()  #total number of processes running
+    # myHostName = MPI.Get_processor_name()  #machine name running the code
+    #
+    #
+    # # print(numProcesses)
+    # if (numProcesses <= len(colorFitList)):
+    #     for i in range(id, len(colorFitList), numProcesses):
+    #
+    # #     # if i%numProcesses!=id: continue
+    #         finalImg.paste(colorFitList[i][2],
+    #                    (colorFitList[i][0] * round(widthOfEach), colorFitList[i][1] * round(heightOfEach)))
+    # comm.Barrier()
+    # finalImg.save("finalImg.png")
     # finalImg.show()
     return finalImg
 
-def checkFinalImg(finalImg):
-    correctResult = getPixelsOfPic(rescaleToPixels(finalImg))
-    return correctResult
+def checkFinalImg(finalImg, correctResult):
+    result = getPixelsOfPic(rescaleToPixels(finalImg))
+    for i in range(len(result)):
+        if result[i] != correctResult[i]:
+            return False
+    return True
 
-
-def main():
+if __name__ == "__main__":
     processedData = createDataset()
     dataset = processedData[0]
     widthOfEach = processedData[1]
@@ -90,6 +128,10 @@ def main():
     f2 = time.perf_counter()
     print(f'getPixelsOfPic finished in {round(f2-s2, 2)} second(s)')
 
+    # print(len(pixelsList))
+    # smallerParts = comm.Scatter(pixelsList, root=0)
+    # print(len(smallerParts))
+
     s3 = time.perf_counter()
     colorFitList = calculateBestColorFit(pixelsList, dataset)
     # print(colorFitList)
@@ -101,12 +143,9 @@ def main():
     f4 = time.perf_counter()
     print(f'CreateFinalPic finished in {round(f4-s4, 2)} second(s)')
 
-    global correctResult
-    correctResult =  checkFinalImg(finalImg)
-    # print(correctResult)
+    test = checkFinalImg(finalImg, correctResult)
+    print(test)
 #calculateBestColorFit and createFinalPic were the two out of 4 functions in ConvertToPhotomosaicsSEQ
 # that are the mose expensive:
 # ~8s for calculate and ~8.7s for createFinalPic (widthpixels = 100)
 # 32.7s for calculate and
-
-main()

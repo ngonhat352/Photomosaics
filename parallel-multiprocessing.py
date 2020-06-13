@@ -1,8 +1,14 @@
+'''
+FAILED - NEED TO READ MORE ABOUT MULTIPROCESSING
+'''
 from PIL import Image
-from createRGBDataset import createDataset
+from createRGBDataset import cropEach, createDataset
 import time
+from multiprocessing import Pool
+import threading
+from photomosaicsSEQ import correctResult
 
-# correctResult = []
+
 
 def rescaleToPixels(inputImg):
     numPixelsWidth = 100      # WHERE THE SAMPLE SIZE WILL CHANGE
@@ -26,6 +32,7 @@ def getPixelsOfPic(img):
 
 
 def calculateBestColorFit(imgPixels, datasetPics):
+    # print(threading.current_thread().name)
     result = []
 
     for eachPix in imgPixels:
@@ -34,7 +41,6 @@ def calculateBestColorFit(imgPixels, datasetPics):
         rgb = eachPix[2]
         if rgb[3] <= 150:   #To remove the color edges
             rgb = (255,255,255,255)
-
         minDifference = 9999
 
         for i in range(len(datasetPics)):
@@ -47,34 +53,41 @@ def calculateBestColorFit(imgPixels, datasetPics):
                 pic = datasetPics[i][2]
                 minDifference = diff
 
-        result.append([x,y,pic])
+    result.append([x,y,pic])
 
     return result
 
 
 def createFinalPic(colorFitList, img, widthOfEach, heightOfEach):
+    s1 = time.perf_counter()
     width, height = img.size
-    finalImg = Image.new("RGB", (width * round(widthOfEach), height * round(heightOfEach)), color = "black")
+    finalImg = Image.new("RGB", (width * round(widthOfEach), height * round(heightOfEach)), color="black")
 
     for i in range(0, len(colorFitList)):
         finalImg.paste(colorFitList[i][2],
                        (colorFitList[i][0] * round(widthOfEach), colorFitList[i][1] * round(heightOfEach)))
+    f1 = time.perf_counter()
+    print(f'STEP 1 finished in {round(f1-s1, 2)} second(s)')
 
+    s1 = time.perf_counter()
     finalImg.save("finalImg.png")
+    f1 = time.perf_counter()
+    print(f'SAVING finished in {round(f1-s1, 2)} second(s)')
     # finalImg.show()
     return finalImg
 
-def checkFinalImg(finalImg):
-    correctResult = getPixelsOfPic(rescaleToPixels(finalImg))
-    return correctResult
+def checkFinalImg(finalImg, correctResult):
+    result = getPixelsOfPic(rescaleToPixels(finalImg))
+    for i in range(len(result)):
+        if result[i] != correctResult[i]:
+            return False
+    return True
 
-
-def main():
+if __name__ == "__main__":
     processedData = createDataset()
     dataset = processedData[0]
     widthOfEach = processedData[1]
     heightOfEach = processedData[2]
-
 
     # inputImg = input("Name of picture to convert into Photomosaics:  ")
     inputImg = 'bulbasaur.png'
@@ -91,8 +104,19 @@ def main():
     print(f'getPixelsOfPic finished in {round(f2-s2, 2)} second(s)')
 
     s3 = time.perf_counter()
-    colorFitList = calculateBestColorFit(pixelsList, dataset)
-    # print(colorFitList)
+    # colorFitList = calculateBestColorFit(pixelsList, dataset)
+
+    # queue = Queue()
+    # queue.put((pixelsList, dataset))
+    # p = Process(target=worker, args=(queue,))
+    # p.start()
+    # colorFitList =  queue.get()  # Prints {"foo": True}
+    # p.join()
+
+    pool = Pool(processes=10)              # start 4 worker processes
+    result = pool.apply_async(calculateBestColorFit, (pixelsList, dataset))    # evaluate "f(10)" asynchronously
+    colorFitList =  result.get()           # prints "100" unless your computer is *very* slow
+
     f3 = time.perf_counter()
     print(f'CalculateBestColorFit finished in {round(f3-s3, 2)} second(s)')
 
@@ -101,12 +125,17 @@ def main():
     f4 = time.perf_counter()
     print(f'CreateFinalPic finished in {round(f4-s4, 2)} second(s)')
 
-    global correctResult
-    correctResult =  checkFinalImg(finalImg)
-    # print(correctResult)
-#calculateBestColorFit and createFinalPic were the two out of 4 functions in ConvertToPhotomosaicsSEQ
-# that are the mose expensive:
-# ~8s for calculate and ~8.7s for createFinalPic (widthpixels = 100)
-# 32.7s for calculate and
-
-main()
+    test = checkFinalImg(finalImg, correctResult)
+    print(test)
+    # s3 = time.perf_counter()
+    # # colorFitList = calculateBestColorFit(pixelsList, dataset)
+    # colorFitList = []
+    # with ThreadPoolExecutor(max_workers=10) as executor:
+    #     results = [executor.submit(calculateBestColorFit, rgb, dataset)
+    #                        for rgb in pixelsList]
+    #     print(current_thread().name)
+    #     for i in as_completed(results):
+    #         colorFitList.append(i.result()[0])
+    # # print(colorFitList)
+    # f3 = time.perf_counter()
+    # print(f'CalculateBestColorFit finished in {round(f3-s3, 2)} second(s)')
