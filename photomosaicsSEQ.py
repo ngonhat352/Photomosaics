@@ -1,9 +1,18 @@
+'''
+This file contains code for the sequential version of the program.
+There are 4 main steps corresponding to the first 4 functions
+'''
 from PIL import Image
 from createRGBDataset import createDataset
 import time
 
-# correctResult = []
+'''
+If the width of the input image is set to 100 pixels - or blocks,
+then calculate the ratio between height and width of that image
+and set number of pixels of height as that ratio * real height
 
+@return: new image that is divided into blocks
+'''
 def rescaleToPixels(inputImg):
     numPixelsWidth = 100      # WHERE THE SAMPLE SIZE WILL CHANGE
     pixelRatio = (numPixelsWidth / float(inputImg.size[0]))
@@ -13,8 +22,10 @@ def rescaleToPixels(inputImg):
 
 
 '''
-GET RGB of each pixel
-= [R,G,B,a]
+Get RGB values of pixels/ blocks that
+the input image is divided into
+
+@return: [[R,G,B,a],...]
 '''
 def getPixelsOfPic(img):
     width, height = img.size
@@ -25,6 +36,13 @@ def getPixelsOfPic(img):
     return pixels
 
 
+'''
+Compare the RGB values of each block of the input image
+to those of each Pokemon picture cropped from the database picture.
+
+Each index will store the location of the block and the Pokemon picture most similar
+@return: [[x,y of a block, Pokemon picture that will replace that block]..]
+'''
 def calculateBestColorFit(imgPixels, datasetPics):
     result = []
 
@@ -51,7 +69,13 @@ def calculateBestColorFit(imgPixels, datasetPics):
 
     return result
 
+'''
+Using the array from the above function,
+this function runs through each block of the input image
+and replace it with the corresponding Pokemon pictures
 
+@return: the final output - a full photomosaics
+'''
 def createFinalPic(colorFitList, img, widthOfEach, heightOfEach):
     width, height = img.size
     finalImg = Image.new("RGB", (width * round(widthOfEach), height * round(heightOfEach)), color = "black")
@@ -64,6 +88,10 @@ def createFinalPic(colorFitList, img, widthOfEach, heightOfEach):
     # finalImg.show()
     return finalImg
 
+'''
+To check if the final image from the parallel versions are correct,
+this function returns the RGB values of each pixel from the output image
+'''
 def checkFinalImg(finalImg):
     correctResult = getPixelsOfPic(rescaleToPixels(finalImg))
     return correctResult
@@ -94,10 +122,7 @@ def main():
 
     s3 = time.perf_counter()
     colorFitList = calculateBestColorFit(pixelsList, dataset)
-    print(colorFitList[0])
-    print(len(colorFitList))
 
-    # print(colorFitList)
     f3 = time.perf_counter()
     print(f'CalculateBestColorFit finished in {round(f3-s3, 2)} second(s)')
 
@@ -108,10 +133,5 @@ def main():
 
     global correctResult
     correctResult =  checkFinalImg(finalImg)
-    # print(correctResult)
-#calculateBestColorFit and createFinalPic were the two out of 4 functions in ConvertToPhotomosaicsSEQ
-# that are the mose expensive:
-# ~8s for calculate and ~8.7s for createFinalPic (widthpixels = 100)
-# 32.7s for calculate and
 
 main()
