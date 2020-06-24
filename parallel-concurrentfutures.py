@@ -7,6 +7,8 @@ from createRGBDataset import cropEach, createDataset
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
 import threading
+from photomosaicsSEQ import correctResult
+
 
 
 def rescaleToPixels(inputImg):
@@ -53,25 +55,18 @@ def calculateBestColorFit(eachPix, datasetPics):
             minDifference = diff
 
     result.append([x,y,pic])
-
     return result
 
 
 def createFinalPic(colorFitList, img, widthOfEach, heightOfEach):
-    s1 = time.perf_counter()
     width, height = img.size
     finalImg = Image.new("RGB", (width * round(widthOfEach), height * round(heightOfEach)), color="black")
 
     for i in range(0, len(colorFitList)):
         finalImg.paste(colorFitList[i][2],
                        (colorFitList[i][0] * round(widthOfEach), colorFitList[i][1] * round(heightOfEach)))
-    f1 = time.perf_counter()
-    print(f'STEP 1 finished in {round(f1-s1, 2)} second(s)')
 
-    s1 = time.perf_counter()
     finalImg.save("finalImg.png")
-    f1 = time.perf_counter()
-    print(f'SAVING finished in {round(f1-s1, 2)} second(s)')
     # finalImg.show()
     return finalImg
 
@@ -82,6 +77,10 @@ def checkFinalImg(finalImg, correctResult):
             return False
     return True
 
+def appending(i, array):
+    array.append(i)
+    return array
+
 if __name__ == "__main__":
     processedData = createDataset()
     dataset = processedData[0]
@@ -89,7 +88,7 @@ if __name__ == "__main__":
     heightOfEach = processedData[2]
 
     # inputImg = input("Name of picture to convert into Photomosaics:  ")
-    inputImg = 'bulbasaur.png'
+    inputImg = 'lorsan.png'
     inputImage = Image.open(inputImg).convert("RGBA")
 
     s1 = time.perf_counter()
@@ -105,12 +104,17 @@ if __name__ == "__main__":
     s3 = time.perf_counter()
     # colorFitList = calculateBestColorFit(pixelsList, dataset)
     colorFitList = []
+
     with ThreadPoolExecutor(max_workers=4) as executor:
         results = {executor.submit(calculateBestColorFit, eachPix, dataset): eachPix
                            for eachPix in pixelsList}
+        # print(results)
+        # colorFitList = list(results.values())
+
+        # colorFitList = list(as_completed(results).result()[0])
         for i in as_completed(results):
             colorFitList.append(i.result()[0])
-    # print(colorFitList)
+    # print(colorFitList[0])
     f3 = time.perf_counter()
     print(f'CalculateBestColorFit finished in {round(f3-s3, 2)} second(s)')
 
@@ -121,15 +125,3 @@ if __name__ == "__main__":
 
     test = checkFinalImg(finalImg, correctResult)
     print(test)
-    # s3 = time.perf_counter()
-    # # colorFitList = calculateBestColorFit(pixelsList, dataset)
-    # colorFitList = []
-    # with ThreadPoolExecutor(max_workers=10) as executor:
-    #     results = [executor.submit(calculateBestColorFit, rgb, dataset)
-    #                        for rgb in pixelsList]
-    #     print(current_thread().name)
-    #     for i in as_completed(results):
-    #         colorFitList.append(i.result()[0])
-    # # print(colorFitList)
-    # f3 = time.perf_counter()
-    # print(f'CalculateBestColorFit finished in {round(f3-s3, 2)} second(s)')

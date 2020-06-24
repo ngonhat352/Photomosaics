@@ -60,7 +60,7 @@ def createFinalPic(colorFitList, img, widthOfEach, heightOfEach):
         finalImg.paste(colorFitList[i][2],
                        (colorFitList[i][0] * round(widthOfEach), colorFitList[i][1] * round(heightOfEach)))
 
-    finalImg.save("finalImg.png")
+    finalImg.save("finalImg2.png")
     # finalImg.show()
     return finalImg
 
@@ -70,6 +70,8 @@ def checkFinalImg(finalImg):
 
 
 def main():
+    print("\n ----- SEQ -----")
+
     processedData = createDataset()
     dataset = processedData[0]
     widthOfEach = processedData[1]
@@ -77,7 +79,7 @@ def main():
 
 
     # inputImg = input("Name of picture to convert into Photomosaics:  ")
-    inputImg = 'bulbasaur.png'
+    inputImg = 'lorsan.png'
     inputImage = Image.open(inputImg).convert("RGBA")
 
     s1 = time.perf_counter()
@@ -92,6 +94,9 @@ def main():
 
     s3 = time.perf_counter()
     colorFitList = calculateBestColorFit(pixelsList, dataset)
+    print(colorFitList[0])
+    print(len(colorFitList))
+
     # print(colorFitList)
     f3 = time.perf_counter()
     print(f'CalculateBestColorFit finished in {round(f3-s3, 2)} second(s)')

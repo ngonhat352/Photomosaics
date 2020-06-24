@@ -1,14 +1,42 @@
+# %%writefile 13reductionList.py
 from mpi4py import MPI
 
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
+# Exercise: Can you explain what this function returns,
+#           given two lists as input?
+def sumListByElements(x,y):
+    return [a+b for a, b in zip(x, y)]
 
-print('INIT')
-comm.Barrier()
-print('BEFORE')
-comm.Barrier()
-print('AFTER')
+def main():
+    comm = MPI.COMM_WORLD
+    id = comm.Get_rank()            #number of the process running the code
+    numProcesses = comm.Get_size()  #total number of processes running
+    myHostName = MPI.Get_processor_name()  #machine name running the code
+
+    srcList = [1*id, 2*id, 3*id, 4*id, 5*id]
+    print(srcList)
+    destListMax = comm.reduce(srcList, op=MPI.MAX)
+    destListSum = comm.reduce(srcList, op=MPI.SUM)
+    #destListSumByElement = comm.reduce(srcList, op=sumListByElements)
+
+    if id == 0:        # master/root process will print result
+        print("The resulting reduce max list is  {}".format(destListMax))
+        print("The resulting reduce sum list is  {}".format(destListSum))
+        #print("The resulting reduce sum list is  {}".format(destListSumByElement))
+
+########## Run the main function
+main()
+
+# from mpi4py import MPI
+#
+# comm = MPI.COMM_WORLD
+# rank = comm.Get_rank()
+# size = comm.Get_size()
+#
+# print('INIT')
+# comm.Barrier()
+# print('BEFORE')
+# comm.Barrier()
+# print('AFTER')
 
 # from mpi4py import MPI
 # # from mpi4py import MPI
